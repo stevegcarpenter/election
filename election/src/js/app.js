@@ -22,7 +22,7 @@ App = {
   },
 
   initContract: function() {
-    $.getJSON("Election.json", function(election) {
+    $.getJSON('Election.json', function(election) {
       // Instantiate a new truffle contract from the artifact
       App.contracts.Election = TruffleContract(election);
       // Connect provider to interact with contract
@@ -34,46 +34,48 @@ App = {
 
   render: function() {
     var electionInstance;
-    var loader = $("#loader");
-    var content = $("#content");
+    var loader = $('#loader');
+    var content = $('#content');
 
     loader.show();
     content.hide();
 
     // Load account data
-    web3.eth.getCoinbase(function(err, account) {
+    web3.eth.getCoinbase((err, account) => {
       if (err === null) {
         App.account = account;
-        $("#accountAddress").html("Your Account: " + account);
+        $('#accountAddress').html('Your Account: ' + account);
       }
     });
 
     // Load contract data
-    App.contracts.Election.deployed().then(function(instance) {
-      electionInstance = instance;
-      return electionInstance.candidatesCount();
-    }).then(function(candidatesCount) {
-      var candidatesResults = $("#candidatesResults");
-      candidatesResults.empty();
+    App.contracts.Election.deployed()
+      .then(instance => {
+        electionInstance = instance;
+        return electionInstance.candidatesCount();
+      })
+      .then(candidatesCount => {
+        var candidatesResults = $('#candidatesResults');
+        candidatesResults.empty();
 
-      for (var i = 1; i <= candidatesCount; i++) {
-        electionInstance.candidates(i).then(function(candidate) {
-          var id = candidate[0];
-          var name = candidate[1];
-          var voteCount = candidate[2];
+        for (var i = 1; i <= candidatesCount; i++) {
+          electionInstance.candidates(i)
+            .then(function(candidate) {
+              var id = candidate[0];
+              var name = candidate[1];
+              var voteCount = candidate[2];
 
-          // Render candidate Result
-          var candidateTemplate = "<tr><th>" + id + "</th><td>" + name + "</td><td>" + voteCount + "</td></tr>"
-          candidatesResults.append(candidateTemplate);
-        });
-      }
+              // Render candidate Result
+              var candidateTemplate = '<tr><th>' + id + '</th><td>' + name + '</td><td>' + voteCount + '</td></tr>';
+              candidatesResults.append(candidateTemplate);
+            });
+        }
 
-      loader.hide();
-      content.show();
-    }).catch(function(error) {
-      console.warn(error);
-    });
-  }
+        loader.hide();
+        content.show();
+      })
+      .catch(console.warn);
+  },
 };
 
 $(function() {
