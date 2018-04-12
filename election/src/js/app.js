@@ -2,6 +2,7 @@ App = {
   web3Provider: null,
   contracts: {},
   account: '0x0',
+  hasVoted: false,
 
   init: function() {
     return App.initWeb3();
@@ -32,10 +33,10 @@ App = {
     });
   },
 
-  render: function() {
-    var electionInstance;
-    var loader = $('#loader');
-    var content = $('#content');
+  render: function () {
+    let election;
+    let loader = $('#loader');
+    let content = $('#content');
 
     loader.show();
     content.hide();
@@ -50,36 +51,55 @@ App = {
 
     // Load contract data
     App.contracts.Election.deployed()
-      .then(instance => {
-        electionInstance = instance;
-        return electionInstance.candidatesCount();
-      })
+      .then(e => election = e)
+      .then(() => election.candidatesCount())
       .then(candidatesCount => {
         var candidatesResults = $('#candidatesResults');
         candidatesResults.empty();
 
+        let candidatesSelect = $('#candidatesSelect');
+        candidatesSelect.empty();
+
+        // render all candidate data
         for (var i = 1; i <= candidatesCount; i++) {
-          electionInstance.candidates(i)
-            .then(function(candidate) {
-              var id = candidate[0];
-              var name = candidate[1];
-              var voteCount = candidate[2];
+          election.candidates(i)
+            .then(candidate => {
+              candidatesResults.append(
+                `<tr>
+                  <!-- candidate Id -->
+                  <th>${candidate[0]}</th>
+                  <!-- candidate name -->
+                  <td>${candidate[1]}</td>
+                  <!-- candidate vote count -->
+                  <td>${candidate[2]}</td>
+                </tr>`
+              );
 
-              // Render candidate Result
-              var candidateTemplate = '<tr><th>' + id + '</th><td>' + name + '</td><td>' + voteCount + '</td></tr>';
-              candidatesResults.append(candidateTemplate);
-            });
+              // Render candidate ballot option
+              candidatesSelect.append(`<option value='${candidate[0]}'>${candidate[1]}</ option>`);
+            })
+            .catch(console.warn);
         }
-
-        loader.hide();
-        content.show();
       })
+      .then(() => election.voters(App.account))
+      .then(alreadyVoted => alreadyVoted ? $('form').hide() : null)
+      .then(() => loader.hide())
+      .then(() => content.show())
       .catch(console.warn);
+  },
+
+  castVote: function () {
+    let candidateId = $('#candidatesSelect').val();
+    App.contracts.Election.deployed()
+      .then(election => election.vote(candidateId, { from: App.account }))
+      .then(() => $('#content').hide())
+      .then(() => $('#loader').show())
+      .catch(console.error);
   },
 };
 
-$(function() {
-  $(window).load(function() {
+$(function () {
+  $(window).load(function () {
     App.init();
   });
 });
